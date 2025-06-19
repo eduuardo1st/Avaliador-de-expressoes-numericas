@@ -7,9 +7,6 @@
 
 #define PI 3.14159265358979323846
 
-// ========================
-// Funções ctype personalizadas
-// ========================
 int isSpaceCustom(char c) {
     return c == ' ' || c == '\t' || c == '\n' || c == '\v' || c == '\f' || c == '\r';
 }
@@ -18,9 +15,6 @@ int isDigitCustom(char c) {
     return c >= '0' && c <= '9';
 }
 
-// ========================
-// Pilhas
-// ========================
 typedef struct {
     char dados[512][64];
     int topo;
@@ -40,9 +34,6 @@ void initPilhaFloat(PilhaFloat *p) { p->topo = -1; }
 void pushFloat(PilhaFloat *p, float f) { p->dados[++(p->topo)] = f; }
 float popFloat(PilhaFloat *p) { return (p->topo == -1) ? 0 : p->dados[(p->topo)--]; }
 
-// ========================
-// Funções Auxiliares
-// ========================
 int ehFuncao(const char *str, char *nomeFunc) {
     const char *funcoes[] = {"raiz", "sen", "cos", "tg", "log"};
     for (int i = 0; i < 5; i++) {
@@ -58,8 +49,8 @@ int obterPrecedencia(const char *op) {
     if (!strcmp(op, "+") || !strcmp(op, "-")) return 1;
     if (!strcmp(op, "*") || !strcmp(op, "/") || !strcmp(op, "%")) return 2;
     if (!strcmp(op, "^")) return 3;
-    if (ehFuncao(op, (char[8]){})) return 4; // Funções têm alta precedência
-    return 0; // Para parênteses
+    if (ehFuncao(op, (char[8]){})) return 4;
+    return 0;
 }
 
 int ehOperador(const char *op) {
@@ -68,9 +59,6 @@ int ehOperador(const char *op) {
            !strcmp(op, "%") || !strcmp(op, "^");
 }
 
-// ========================
-// Infixa -> Posfixa (Algoritmo Shunting-yard)
-// ========================
 char *getFormaPosFixa(char *Str) {
     static char saida[512];
     saida[0] = '\0';
@@ -105,14 +93,13 @@ char *getFormaPosFixa(char *Str) {
                 strcat(saida, popStr(&pilha));
                 strcat(saida, " ");
             }
-            popStr(&pilha); // Remove '(' da pilha
-            
+            popStr(&pilha);
             if (pilha.topo != -1 && ehFuncao(topoStr(&pilha), (char[8]){})) {
                 strcat(saida, popStr(&pilha));
                 strcat(saida, " ");
             }
             i++;
-        } else { // É um operador
+        } else {
             char op[2] = {Str[i], '\0'};
             while (pilha.topo != -1 && strcmp(topoStr(&pilha), "(") != 0 &&
                    obterPrecedencia(topoStr(&pilha)) >= obterPrecedencia(op)) {
@@ -136,10 +123,6 @@ char *getFormaPosFixa(char *Str) {
     return saida;
 }
 
-
-// ========================
-// Posfixa -> Infixa
-// ========================
 char *getFormaInFixa(char *Str) {
     static char saida[512];
     saida[0] = '\0';
@@ -160,7 +143,7 @@ char *getFormaInFixa(char *Str) {
         if (isDigitCustom(token[0]) || (token[0] == '.' ) || (strlen(token) > 1 && token[0] == '-')) {
             topo++;
             strcpy(pilha[topo].expressao, token);
-            pilha[topo].precedencia = 5; // Precedência máxima para números
+            pilha[topo].precedencia = 5;
         } else if (ehOperador(token)) {
             if (topo < 1) { return "Error"; }
             ItemPilha b = pilha[topo--];
@@ -168,8 +151,7 @@ char *getFormaInFixa(char *Str) {
             int precAtual = obterPrecedencia(token);
 
             char exprA[512], exprB[512];
-            
-            // Regra de parentesização: se a precedência do operando for menor que a do operador atual, adicione parênteses.
+
             if (a.precedencia < precAtual) {
                 sprintf(exprA, "(%s)", a.expressao);
             } else {
@@ -181,12 +163,11 @@ char *getFormaInFixa(char *Str) {
             } else {
                 strcpy(exprB, b.expressao);
             }
-            
+
             char novaExpr[512];
             sprintf(novaExpr, "%s %s %s", exprA, token, exprB);
-            
-            // Para garantir o estilo da tabela, parentesiza-se a expressão resultante
-            if(topo > -1){ // Não parentesiza a expressão final
+
+            if(topo > -1){
                 char temp[512];
                 sprintf(temp, "(%s)", novaExpr);
                 strcpy(novaExpr, temp);
@@ -196,10 +177,10 @@ char *getFormaInFixa(char *Str) {
             strcpy(pilha[topo].expressao, novaExpr);
             pilha[topo].precedencia = precAtual;
 
-        } else { // É uma função
+        } else {
             if (topo < 0) { return "Error"; }
             ItemPilha a = pilha[topo--];
-            
+
             char novaExpr[512];
             sprintf(novaExpr, "%s(%s)", token, a.expressao);
 
@@ -209,20 +190,16 @@ char *getFormaInFixa(char *Str) {
         }
         token = strtok(NULL, " ");
     }
-    
+
     if (topo == 0) {
         strcpy(saida, pilha[topo].expressao);
     } else {
         strcpy(saida, "Invalid Expression");
     }
-    
+
     return saida;
 }
 
-
-// ========================
-// Avaliação da Expressão Posfixa
-// ========================
 float getValorPosFixa(char *StrPosFixa) {
     PilhaFloat pilha;
     initPilhaFloat(&pilha);
@@ -250,7 +227,7 @@ float getValorPosFixa(char *StrPosFixa) {
             } else if (!strcmp(token, "^")) {
                 pushFloat(&pilha, powf(a, b));
             }
-        } else { // É função
+        } else {
             if (pilha.topo < 0) return NAN;
             a = popFloat(&pilha);
             if (!strcmp(token, "raiz")) {
@@ -273,10 +250,6 @@ float getValorPosFixa(char *StrPosFixa) {
     return (pilha.topo == 0) ? popFloat(&pilha) : NAN;
 }
 
-
-// ========================
-// Avaliação da Expressão Infixa
-// ========================
 float getValorInFixa(char *StrInFixa) {
     char *posFixa = getFormaPosFixa(StrInFixa);
     return getValorPosFixa(posFixa);
